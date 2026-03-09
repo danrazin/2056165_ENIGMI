@@ -66,7 +66,7 @@ Stateless. It doesn't memorize dates, it just converts them in real-time and sen
 
 ### MICROSERVICES:
 
-#### MICROSERVICE: <name of the microservice>
+#### MICROSERVICE: collector_rest
 - TYPE: backend
 - DESCRIPTION: execute the polling cycle and the normalization of the REST data.
 - PORTS: N/D.
@@ -99,7 +99,7 @@ Stateless. It hanldes continuos data flow withoout local persistence.
 - simulator: WS on ws://simulator:8080/api/telemetry/ws
 - kafka: producer on kafka:9092
 
-#### MICROSERVICE: <name of the microservice>
+#### MICROSERVICE: collector_telemetry_ws
 - TYPE: backend
 - DESCRIPTION: asynchronous WebSocket stream consumer.
 - PORTS: N/D.
@@ -128,7 +128,7 @@ Ephemeral (configured via docker-compose with no external volumes in the provide
 ### EXTERNAL SERVICES CONNECTIONS
 Accepts connections from ingestion_rest, ingestion_ws and engine.
 
-#### MICROSERVICE: <name of the microservice>
+#### MICROSERVICE: kafka-bus
 - TYPE: middleware/message-broker.
 - DESCRIPTION: it manages the communication channels (topics) between the various seervices of the system.
 - PORTS: 9092
@@ -136,4 +136,59 @@ Accepts connections from ingestion_rest, ingestion_ws and engine.
 It uses the KRaft (Kafta Raft) protocol for cluster management without the need for Zookeeper.
 - SERVICE ARCHITECTURE: Distributed log-based architecture.
 Uses a PLAINTEXT listener for internal communication within the mars_net Docker network.
+
+## CONTAINER_NAME: engine
+
+### DESCRIPTION: 
+System logical core: manages the frontend API, rule persistence and event processing.
+
+### USER STORIES:
+1) As an operator , I want to select a sensor, an operator and a value to define an automation trigger.
+
+2) As an operator , I want to link an actuator to a rule so that the system reacts automatically.
+
+3) As a supervisor , I want to see all configured rules in a dedicated list.
+
+4) As a system admin , I want the UI to prevent contradictory automation rules.
+
+12) As an operator , I want to manually toggle actuators ON/OFF.
+
+13) As a technician , I want to clearly see actuator states.
+
+18) As a supervisor , I want all system actions recorded in an event log.
+
+20) As a data analyst , I want each log entry to include a precise timestamp.
+
+### PORTS: 
+5000:5000
+
+### DESCRIPTION:
+The Engine acts as a central orchestrator. it listens for normalized events from Kafka, updates the state of the
+sensors in memory (cache), and evaluates whether the conditions of the automation rules are met to trigger the actuators.
+It also exposes the REST APIs used bu the Dashboard.
+
+### PERSISTENCE EVALUATION
+Persistent. Uses a local SQLite database to store automation rules (rules table).
+This ensures that user-defined automations aren't lost when the containeer restars.
+
+### EXTERNAL SERVICES CONNECTIONS
+It connects to the Kakfa Broker (Consumer) and to the Simulator (POST for attuators).
+
+#### MICROSERVICE: engine_api
+- TYPE: backend.
+- DESCRIPTION: exposes endpoints for system management and evaluates automation rules.
+- PORTS: 5000
+- TECHNOLOGICAL SPECIFICATION: Flask (Web Framework), SQLite3, Kafka Consumer.
+- SERVICE ARCHITECTURE: multithreaded: one thread runs the Flask API server, a second thread constantly consumes messages
+from Kafka.
+- ENDPOINTS: 
+		
+	| HTTP METHOD | URL            | Description                                           | User Stories |
+	| GET         | /api/state     | returns the last known state of all sensors           | 7,9,10,11    |
+        | POST        | /api/rules     | creates a new rule of automation                      | 1,2          |
+        | GET         | /api/rules     | returns the list of saved rules                       | 3            |
+        | GET         | /api/actuators | returns the state of the actuators from the simulator | 13           |
+        | DELETE      | /api/rules/{id}| deletes a rule                                        | 4            |
+- DB STRUCTURE:
+rules :	| rule_id | description | sensor_name | operator | threshold_value | actuator_name | action_state | enabled |
 
