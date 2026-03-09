@@ -1,0 +1,48 @@
+services:
+  ingestion-rest:
+    build:
+      context: .
+    container_name: ingestion_rest
+    command: python3 collector_rest.py
+    depends_on:
+      - kafka
+      - simulator
+    networks:
+      - mars_net
+
+  ingestion_ws:
+    build:
+      context: .
+    container_name: ingestion_ws
+    command: python3 collector_telemetry_ws.py
+    depends_on:
+      - kafka
+      - simulator
+    networks:
+      - mars_net
+  simulator:
+    image: mars-iot-simulator:multiarch_v1
+    ports:
+      - "8080:8080"
+    networks:
+      - mars_net
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka_broker
+    environment: # Environment's variable to configuring Apache
+      KAFKA_NODE_ID: 1 # Unique ID of the Kafka node in the cluster
+      KAFKA_PROCESS_ROLES: broker,controller # controller: manage metadata of the cluster
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 # defines on which port Kafka listen to
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 # Address communicated to the clients
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER # Tells to Kafka which listener use for the controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093 # Needed for the quorum of controllers ==> l'unico controller è questo nodo
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # How many copy of the topic exists
+    ports:
+      - "9092:9092"
+    networks:
+      - mars_net
+
+networks:
+  mars_net:
+    driver: bridge
