@@ -6,7 +6,7 @@ from kafka import KafkaProducer # To use Kafka instead of print to monitor
 from normalizer import normalize_event
 
 
-BASE_URL = "http://localhost:8080"
+BASE_URL = "http://simulator:8080"
 
 KAFKA_BROKER = "kafka:9092" # Name of the service on docker-compose
 KAFKA_TOPIC = "mars_normalized_events"
