@@ -10,12 +10,14 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute('''
                 CREATE TABLE IF NOT EXISTS rules (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rule_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    description TEXT,
                     sensor_name TEXT NOT NULL,
                     operator TEXT NOT NULL,
                     threshold_value REAL NOT NULL,
                     actuator_name TEXT NOT NULL,
-                    action_state TEXT NOT NULL
+                    action_state TEXT NOT NULL,
+                    enabled INTEGER DEFAULT 1
                 )
             ''')
     conn.commit()
@@ -25,7 +27,7 @@ def init_db():
 def get_rules_for_sensor(sensor_name):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT operator, threshold_value, actuator_name, action_state FROM rules WHERE sensor_name = ?", (sensor_name,))
+    cursor.execute("SELECT operator, threshold_value, actuator_name, action_state FROM rules WHERE sensor_name = ? AND enabled = 1", (sensor_name,))
     rules = cursor.fetchall()
     conn.close()
     return rules
@@ -45,7 +47,7 @@ def add_rule(sensor_name, operator, threshold, actuator, action):
 def delete_rule(rule_id):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM rules WHERE id = ?", (rule_id,))
+    cursor.execute("DELETE FROM rules WHERE rule_id = ?", (rule_id,))
     conn.commit()
     conn.close()
 
@@ -53,13 +55,15 @@ def delete_rule(rule_id):
 def get_all_rules():
     conn=sqlite3.connect(DB_NAME)
     cursor=conn.cursor()
-    cursor.execute("SELECT * FROM rules")
+    cursor.execute("SELECT * FROM rules WHERE enabled=1")
     rules=cursor.fetchall()
     conn.close()
-    return [{"id":r[0],
-             "sensor_name":r[1],
-             "operator":r[2],
-             "threshold":r[3],
-             "actuator":r[4],
-             "action":r[5]}
+    return [{"rule_id":r[0],
+             "description":r[1],
+             "sensor_name":r[2],
+             "operator":r[3],
+             "threshold":r[4],
+             "actuator":r[5],
+             "action":r[6],
+             "enabled":r[7]}
              for r in rules]

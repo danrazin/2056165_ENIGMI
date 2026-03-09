@@ -51,24 +51,38 @@ def api_get_actuators_state():
     actuators_state=actuators.get_actuators_state()
     return jsonify(actuators_state),200
 
+
 @app.route("/api/rules", methods=['GET','POST'])
 def api_manage_rules():
     if request.method=='GET':
         rules=database.get_all_rules()
         return jsonify(rules),200
+    
     elif request.method=='POST':
-        data=request.get_json()
-        sensor_name=data.get("sensor_name")
-        operator=data.get("operator")
-        threshold=data.get("threshold")
-        actuator=data.get("actuator")
-        action=data.get("action")
+        data = request.json
 
-        if not all([sensor_name,operator,threshold,actuator,action]):
-            return jsonify({"error":"Missing fields"}),400
-        
-        database.add_rule(sensor_name,operator,threshold,actuator,action)
-        return jsonify({"message":"Rule added successfully"}),201
+        try:
+            cond_parts = data['condition'].split(' ')
+            act_parts = data['action'].split(' ')
+
+            sensor = cond_parts[0]
+            op = cond_parts[1]
+            threshold = float(cond_parts[2])
+            
+            if "set" in data['action']:
+                actuator = act_parts[1]
+                action = act_parts[3]
+            else:
+                actuator = act_parts[0]
+                action = act_parts[1]
+
+            description = data.get('description', f"Rule for {sensor}")
+            
+            database.add_rule(sensor, op, threshold, actuator, action) 
+            
+            return jsonify({"status": "success", "message": "Rule added"}), 201
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 400
     
 @app.route("/api/rules/<int:rule_id>", methods=['DELETE'])
 def api_delete_rule(rule_id):
