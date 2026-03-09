@@ -6,7 +6,7 @@ from kafka import KafkaProducer
 from collectors.normalizer import normalize_event
 
 
-BASE_WS = "ws://localhost:8080/api/telemetry/ws"
+BASE_WS = "ws://simulator:8080/api/telemetry/ws"
 KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "mars_normalized_events"
 
