@@ -21,7 +21,7 @@ while producer is None:
             value_serializer=lambda v: json.dumps(v).encode('utf-8')
         )
     except NoBrokersAvailable:
-        print("Kafka non risponde, attendo 5 secondi...")
+        print("Kafka not ready, try again after 5 sec...")
         time.sleep(5)
 
 # Topics and associated schema

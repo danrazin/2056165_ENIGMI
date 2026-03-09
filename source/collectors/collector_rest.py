@@ -22,7 +22,7 @@ while producer is None:
         )
         print("Connesso a Kafka!")
     except NoBrokersAvailable:
-        print("Kafka non è ancora pronto, riprovo tra 5 secondi...")
+        print("Kafka not ready, try again after 5 sec...")
         time.sleep(5)
 
 # Sensor list with its own schema

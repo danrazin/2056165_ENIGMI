@@ -1,7 +1,9 @@
 import json
 import threading
+import time
 from flask import Flask, request, jsonify
 from kafka import KafkaConsumer
+from kafka.errors import NoBrokersAvailable
 
 import database
 import actuators
@@ -94,11 +96,17 @@ def run_api():
 
 #KAFKA CONSUMER THREAD
 def run_kafka_consumer():
-    consumer=KafkaConsumer(
-        'mars_normalized_events',
-        bootstrap_servers=['kafka:9092'],
-        value_deserializer=lambda m: json.loads(m.decode('utf-8')),
-    )
+    consumer = None
+    while consumer is None:
+        try:
+            consumer=KafkaConsumer(
+                'mars_normalized_events',
+                bootstrap_servers=['kafka:9092'],
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+            )
+        except NoBrokersAvailable:
+            print("Kafka not ready, try again after 5 sec...")
+            time.sleep(5)
 
     for message in consumer:
         event=message.value

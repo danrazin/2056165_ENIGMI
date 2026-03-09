@@ -46,6 +46,21 @@ services:
       - "9092:9092"
     networks:
       - mars_net
+  rules-engine:
+    build: ./rules_engine
+    container_name: rules-engine
+    ports:
+      - "5000:5000"
+    depends_on:
+      - kafka
+      - simulator
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SIMULATOR_URL=http://simulator:8080/api/actuators
+    volumes:
+      - ./rules_engine:/app
+    networks:
+      - mars_net
 
 networks:
   mars_net:
