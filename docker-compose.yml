@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # IL TUO MOTORE (Dalla cartella rules_engine)
+  rules-engine:
+    build:
+      context: ./rules_engine
+      dockerfile: Dockerfile
+    container_name: rules_engine
+    ports:
+      - "5000:5000"
+    depends_on:
+      - kafka
+    networks:
+      - mars_net
+
+  # L'INGESTION DEL MEMBRO 1 (Dalla cartella source)
+  ingestion-rest:
+    build:
+      context: ./source
+      dockerfile: collectors/Dockerfile
+    container_name: ingestion_rest
+    command: python3 collector_rest.py
+    depends_on:
+      - kafka
+      - simulator
+    networks:
+      - mars_net
+
+  # KAFKA (Broker comune)
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka_broker
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - mars_net
+
+  # IL SIMULATORE (Richiesto dal PDF)
+  simulator:
+    image: mars-iot-simulator:multiarch_v1
+    container_name: simulator
+    ports:
+      - "8080:8080"
+    networks:
+      - mars_net
+
+networks:
+  mars_net:
+    driver: bridge

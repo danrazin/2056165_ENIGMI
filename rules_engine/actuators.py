@@ -1,16 +1,17 @@
 import requests
 
 #LOCAL TEST
-SIMULATOR_URL = "http://localhost:8080/api/actuators"
+SIMULATOR_URL = "http://simulator:8080/api/actuators"
 
 # SET ACTUATOR STATE
 def trigger_actuator(actuator_name,action_state):
     url = f"{SIMULATOR_URL}/{actuator_name}"
-    payload = {"state":action_state}
-    headers = {'Content-Type':'application/json'}
+
+    val = 1 if action_state=="ON" else 0
+    payload = {"value": val}
 
     try:
-        resp = requests.post(url,json=payload, headers=headers, timeout=2)
+        resp = requests.post(url,json=payload, timeout=2)
         if resp.status_code == 200:
             print(f"SUCCESS : Actuator {actuator_name} set on {action_state}")
         else:
