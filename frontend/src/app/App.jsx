@@ -13,6 +13,7 @@ export default function App() {
     co2_hall: 450,
   });
 
+  // Check rules and trigger actuators
   useEffect(() => {
     rules.forEach((rule) => {
       const sensorValue = sensorData[rule.sensor];
@@ -67,7 +68,26 @@ export default function App() {
         {/* Main Content */}
         <main className="flex-1 p-4 overflow-y-auto bg-gray-900">
           <div className="space-y-6">
-           
+            {/* Telemetry Charts */}
+            <section>
+              <h2 className="text-white text-lg font-bold mb-3">Telemetry Streams</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <TelemetryChart 
+                  key="solar-power"
+                  title="Solar Array Power"
+                  unit="kW"
+                  color="#f59e0b"
+                  generateValue={generateSolarPower}
+                />
+                <TelemetryChart 
+                  key="radiation"
+                  title="Radiation Exposure"
+                  unit="mSv/h"
+                  color="#3b82f6"
+                  generateValue={generateRadiation}
+                />
+              </div>
+            </section>
 
             {/* Sensor Gauges */}
             <section>
