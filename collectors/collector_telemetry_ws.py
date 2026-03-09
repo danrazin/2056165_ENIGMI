@@ -3,7 +3,7 @@ import json
 import websockets
 
 from kafka import KafkaProducer
-from collectors.normalizer import normalize_event
+from normalizer import normalize_event
 
 
 BASE_WS = "ws://simulator:8080/api/telemetry/ws"
