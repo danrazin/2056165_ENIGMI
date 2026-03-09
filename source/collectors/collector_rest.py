@@ -4,6 +4,7 @@ import json
 
 from kafka import KafkaProducer # To use Kafka instead of print to monitor
 from normalizer import normalize_event
+from kafka.errors import NoBrokersAvailable
 
 
 BASE_URL = "http://simulator:8080"
@@ -12,10 +13,17 @@ KAFKA_BROKER = "kafka:9092" # Name of the service on docker-compose
 KAFKA_TOPIC = "mars_normalized_events"
 
 # Initialize Kafka producer: who sends message into broker
-producer = KafkaProducer(
-    bootstrap_servers=[KAFKA_BROKER],
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
-)
+producer = None
+while producer is None:
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=[KAFKA_BROKER],
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+        print("Connesso a Kafka!")
+    except NoBrokersAvailable:
+        print("Kafka non è ancora pronto, riprovo tra 5 secondi...")
+        time.sleep(5)
 
 # Sensor list with its own schema
 REST_SENSORS = [

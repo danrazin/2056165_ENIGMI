@@ -1,9 +1,11 @@
 import asyncio
 import json
 import websockets
+import time
 
 from kafka import KafkaProducer
 from normalizer import normalize_event
+from kafka.errors import NoBrokersAvailable
 
 
 BASE_WS = "ws://simulator:8080/api/telemetry/ws"
@@ -11,10 +13,16 @@ KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "mars_normalized_events"
 
 # The initialization of the Producer can block all, it is better to do it synchronous at the start
-producer = KafkaProducer(
-    bootstrap_servers=[KAFKA_BROKER],
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')
-)
+producer = None
+while producer is None:
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=[KAFKA_BROKER],
+            value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        )
+    except NoBrokersAvailable:
+        print("Kafka non risponde, attendo 5 secondi...")
+        time.sleep(5)
 
 # Topics and associated schema
 TOPICS = [

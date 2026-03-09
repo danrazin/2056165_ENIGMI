@@ -1,7 +1,9 @@
 services:
   ingestion-rest:
     build:
-      context: .
+      context: ./collectors
+    volumes:
+      - ./collectors:/app
     container_name: ingestion_rest
     command: python3 collector_rest.py
     depends_on:
@@ -12,7 +14,9 @@ services:
 
   ingestion_ws:
     build:
-      context: .
+      context: ./collectors
+    volumes:
+      - ./collectors:/app
     container_name: ingestion_ws
     command: python3 collector_telemetry_ws.py
     depends_on:
