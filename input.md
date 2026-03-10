@@ -38,6 +38,9 @@ Lastly, the system works as a single-tenant platform without authentication. All
 19) As a user , I want color-coded log entries to quickly identify issues.
 20) As a data analyst , I want each log entry to include a precise timestamp.
 
+The graphic mockups for each user story can be found in the booklets folder and
+referenced in the attached spreadsheet.
+
 ### STANDARD EVENT SCHEMA
 
 All heterogeneous data from the simulator are normalized into a single JSON schema before publishing to the Kafka
