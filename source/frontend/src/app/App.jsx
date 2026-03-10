@@ -18,6 +18,20 @@ export default function App() {
     greenhouse_temperature: 22.5,
     entrance_humidity: 45.0,
     co2_hall: 450,
+    corridor_pressure: 0,
+    hydroponic_ph_ph: 0,
+    water_tank_level_level_liters: 0,
+    air_quality_pm25_pm25_ug_m3: 0,
+    air_quality_voc_voc_ppb: 0,
+  });
+  const [telemetryData, setTelemetryData] = useState({
+    solar_array_power_kw: 0,
+    radiation_radiation_uSv_h: 0,
+    life_support_oxygen_percent: 0,
+    thermal_loop_primary_temperature_c: 0,
+    power_bus_power_kw: 0,
+    power_consumption_power_kw: 0,
+    'airlock_airlock-1_cycles': 0, 
   });
 
   // Add notification
@@ -61,18 +75,36 @@ export default function App() {
     });
   }, [addNotification]);
 
-  // Simulate sensor data updates
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSensorData((prev) => ({
-        greenhouse_temperature: prev.greenhouse_temperature + (Math.random() - 0.5) * 2,
-        entrance_humidity: Math.max(20, Math.min(80, prev.entrance_humidity + (Math.random() - 0.5) * 5)),
-        co2_hall: Math.max(300, Math.min(800, prev.co2_hall + (Math.random() - 0.5) * 20)),
-      }));
-    }, 3000);
+  const fetchData = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/state');
+
+      if (!response.ok) {
+        // Triggered if the server responds but with an error (e.g., 404 or 500)
+        addNotification(`API Error: ${response.status} ${response.statusText}`, 'error');
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      
+
+      setSensorData(data); 
+      setTelemetryData(data);
+
+    } catch (error) {
+      // Triggered if the fetch fails entirely (e.g., Network Error, CORS issue, Server Down)
+      console.error("Could not fetch sensor data:", error);
+      addNotification("Failed to connect to Mars Station API", "error");
+    }
+  };
+
+    fetchData();
+    const interval = setInterval(fetchData, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [addNotification]);
 
   // Check rules and trigger actuators
   useEffect(() => {
@@ -113,12 +145,30 @@ export default function App() {
 
   // Data generators for telemetry charts
   const generateSolarPower = useCallback(() => {
-    return 8.5 + Math.random() * 2.5;
-  }, []);
+    return telemetryData.solar_array_power_kw;
+  }, [telemetryData]);
 
   const generateRadiation = useCallback(() => {
-    return 0.25 + Math.random() * 0.15;
-  }, []);
+    return telemetryData.radiation_radiation_uSv_h;
+  }, [telemetryData]);
+
+  const generateLife = useCallback(() => {
+    return telemetryData.life_support_oxygen_percent;
+  }, [telemetryData]);
+
+  const generateThermal = useCallback(() => {
+    return telemetryData.thermal_loop_primary_temperature_c;
+  }, [telemetryData]);
+
+  const generatePowerBus = useCallback(() => {
+    return telemetryData.power_bus_power_kw;
+  }, [telemetryData]);
+
+  const generatePowerC = useCallback(() => {
+    return telemetryData.power_consumption_power_kw;
+  }, [telemetryData]);
+
+  
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
@@ -156,6 +206,41 @@ export default function App() {
                   generateValue={generateRadiation}
                 />
               </div>
+              <h2 className="text-white text-lg font-bold mb-3"></h2>
+              <div className="grid grid-cols-2 gap-4">
+                <TelemetryChart 
+                  key="solar-power"
+                  title="Life Support"
+                  unit="%"
+                  color="#f59e0b"
+                  generateValue={generateLife}
+                />
+                <TelemetryChart 
+                  key="radiation"
+                  title="Thermal Support"
+                  unit="°C"
+                  color="#3b82f6"
+                  generateValue={generateThermal}
+                />
+              </div>
+              <h2 className="text-white text-lg font-bold mb-3"></h2>
+              <div className="grid grid-cols-2 gap-4">
+                <TelemetryChart 
+                  key="solar-power"
+                  title="Power Bus"
+                  unit="kw"
+                  color="#f59e0b"
+                  generateValue={generatePowerBus}
+                />
+                <TelemetryChart 
+                  key="radiation"
+                  title="Power Consumption"
+                  unit="kw"
+                  color="#3b82f6"
+                  generateValue={generatePowerC}
+                />
+              </div>
+              
             </section>
 
             {/* Sensor Gauges */}
@@ -180,8 +265,49 @@ export default function App() {
                   title="Hall CO₂"
                   value={sensorData.co2_hall}
                   unit="ppm"
-                  min={300}
-                  max={800}
+                  min={500}
+                  max={1500}
+                />
+              </div>
+              <h2 className="text-white text-lg font-bold mb-3"></h2>
+              <div className="grid grid-cols-3 gap-4">
+                <SensorGauge 
+                  title="Hydroponic PH"
+                  value={sensorData.hydroponic_ph_ph}
+                  unit="ph"
+                  min={0}
+                  max={14}
+                />
+                <SensorGauge 
+                  title="Water Tank Level"
+                  value={sensorData.water_tank_level_level_liters}
+                  unit="l"
+                  min={2000}
+                  max={4000}
+                />
+                <SensorGauge 
+                  title="Corridor Pressure"
+                  value={sensorData.corridor_pressure}
+                  unit="bar"
+                  min={50}
+                  max={200}
+                />
+              </div>
+              <h2 className="text-white text-lg font-bold mb-3"></h2>
+              <div className="grid grid-cols-3 gap-4">
+                <SensorGauge 
+                  title="Air Quality PM25"
+                  value={sensorData.air_quality_pm25_pm25_ug_m3}
+                  unit="um/m3"
+                  min={0}
+                  max={50}
+                />
+                <SensorGauge 
+                  title="Air Quality VOC"
+                  value={sensorData.air_quality_voc_voc_ppb}
+                  unit="ppb"
+                  min={0}
+                  max={500}
                 />
               </div>
             </section>
