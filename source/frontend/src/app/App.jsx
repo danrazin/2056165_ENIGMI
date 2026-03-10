@@ -13,6 +13,7 @@ export default function App() {
     cooling_fan: false,
     habitat_heater: false,
     hall_ventilation: false,
+    entrance_humidifier: false,
   });
   const [sensorData, setSensorData] = useState({
     greenhouse_temperature: 22.5,
@@ -168,7 +169,9 @@ export default function App() {
     return telemetryData.power_consumption_power_kw;
   }, [telemetryData]);
 
-  
+  const generateAirlock = useCallback(() => {
+    return telemetryData['airlock_airlock-1_cycles'];
+  }, [telemetryData]);
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
@@ -240,7 +243,16 @@ export default function App() {
                   generateValue={generatePowerC}
                 />
               </div>
-              
+              <h2 className="text-white text-lg font-bold mb-3"></h2>
+              <div className="grid grid-cols-2 gap-4">
+                <TelemetryChart 
+                  key="solar-power"
+                  title="Airlock"
+                  unit="cycle/h"
+                  color="#f59e0b"
+                  generateValue={generateAirlock}
+                />
+              </div>
             </section>
 
             {/* Sensor Gauges */}
@@ -333,6 +345,15 @@ export default function App() {
                   label="Hall Ventilation"
                   isOn={actuators.hall_ventilation}
                   onToggle={() => toggleActuator('hall_ventilation')}
+                />
+              </div>
+              <h2 className="text-white text-lg font-bold mb-3"></h2>
+              <div className="grid grid-cols-3 gap-4">
+                <ActuatorControl 
+                  name="cooling_fan"
+                  label="Entrance Humidifier"
+                  isOn={actuators.entrance_humidifier}
+                  onToggle={() => toggleActuator('entrance_humidifier')}
                 />
               </div>
             </section>
