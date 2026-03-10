@@ -62,7 +62,20 @@ services:
       - ./rules_engine:/app
     networks:
       - mars_net
-
+  frontend:
+    build: 
+      context: ./frontend
+    volumes:
+      - ./frontend:/app
+    container_name: frontend
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:5000 
+    depends_on:
+      - rules-engine
+    networks:
+      - mars_net
 networks:
   mars_net:
     driver: bridge

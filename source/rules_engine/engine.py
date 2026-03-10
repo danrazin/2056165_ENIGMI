@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify
 from kafka import KafkaConsumer
 import time
 from kafka.errors import NoBrokersAvailable
+from flask_cors import CORS
 
 import database
 import actuators
@@ -57,6 +58,7 @@ def process_sensor_data(event):
         
 # FLASK API
 app=Flask(__name__)
+CORS(app)
 
 # TO GET THE VALUES OF THE SENSORS
 @app.route("/api/state",methods=['GET'])
