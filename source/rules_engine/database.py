@@ -33,13 +33,13 @@ def get_rules_for_sensor(sensor_name):
     return rules
 
 #ADD NEW RULE
-def add_rule(sensor_name, operator, threshold, actuator, action):
+def add_rule(description,sensor_name, operator, threshold, actuator, action):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('''
-                   INSERT INTO rules (sensor_name, operator,threshold_value, actuator_name, action_state)
-                   VALUES(?,?,?,?,?)
-                   ''', (sensor_name,operator,threshold,actuator,action))
+                   INSERT INTO rules (description,sensor_name, operator,threshold_value, actuator_name, action_state)
+                   VALUES(?,?,?,?,?,?)
+                   ''', (description,sensor_name,operator,threshold,actuator,action))
     conn.commit()
     conn.close()
 
@@ -65,5 +65,5 @@ def get_all_rules():
              "threshold":r[4],
              "actuator":r[5],
              "action":r[6],
-             "enabled":r[7]}
+             "enabled":bool(r[7])}
              for r in rules]

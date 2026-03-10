@@ -24,6 +24,16 @@ services:
       - simulator
     networks:
       - mars_net
+
+  rules-engine:
+    build: ./rules_engine
+    container_name: rules_engine
+    ports:
+      - "5000:5000"
+    depends_on:
+      - kafka
+    networks:
+      - mars_net
   simulator:
     image: mars-iot-simulator:multiarch_v1
     ports:
