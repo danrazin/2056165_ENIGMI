@@ -52,92 +52,148 @@ export default function App() {
   }, []);
 
   // Add rule
-  const handleAddRule = useCallback((rule) => {
-    const newRule = { ...rule, id: `rule-${Date.now()}` };
-    setRules((prev) => [...prev, newRule]);
-    addNotification(`Rule created: IF ${rule.sensor} ${rule.operator} ${rule.value} THEN ${rule.actuator} ON`, 'success');
+  const handleAddRule = useCallback(async (rule) => {
+    const payload = {
+      condition: `${rule.sensor} ${rule.operator} ${rule.value}`,
+      action: `${rule.actuator} ON`,
+      description: `Rule for ${rule.sensor}`
+    };
+
+    try {
+      const response = await fetch('http://localhost:5000/api/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Crea l'oggetto regola completo usando l'ID ricevuto dal server
+        const newRule = {
+          id: result.rule_id, // L'ID che abbiamo appena aggiunto al backend
+          sensor: rule.sensor,
+          operator: rule.operator,
+          value: rule.value,
+          actuator: rule.actuator,
+          action: rule.action,
+          description: payload.description
+        };
+
+        // Aggiorna lo stato aggiungendo la nuova regola a quelle esistenti
+        setRules((prevRules) => [...prevRules, newRule]);
+        
+        addNotification(`Regola creata con successo (ID: ${result.id})`, 'success');
+      }
+    } catch (error) {
+      addNotification(`Errore nel salvataggio regola`, 'error');
+    }
   }, [addNotification]);
 
   // Delete rule
-  const handleDeleteRule = useCallback((id) => {
-    setRules((prev) => prev.filter((r) => r.id !== id));
-    addNotification('Rule deleted', 'warning');
+  const handleDeleteRule = useCallback(async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/rules/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setRules((prev) => prev.filter((r) => r.id !== id));
+        addNotification('Regola eliminata dal database', 'warning');
+      }
+    } catch (error) {
+      addNotification('Errore nella cancellazione', 'error');
+    }
   }, [addNotification]);
 
   // Toggle actuator
-  const toggleActuator = useCallback((actuator) => {
-    setActuators((prev) => {
-      const newState = !prev[actuator];
-      addNotification(
-        `Manual: ${actuator.replace('_', ' ').toUpperCase()} set to ${newState ? 'ON' : 'OFF'}`,
-        'info'
-      );
-      return { ...prev, [actuator]: newState };
-    });
-  }, [addNotification]);
+  const toggleActuator = useCallback(async (actuator) => {
+    const nextState = !actuators[actuator];
+    const actionString = nextState ? 'ON' : 'OFF';
+
+    try {
+      // Usa l'endpoint corretto /api/actuators
+      const response = await fetch('http://localhost:5000/api/actuators/toggle', {
+        method: 'POST', // Il backend deve gestire il POST su questa rotta
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          actuator: actuator, 
+          action: actionString 
+        }),
+      });
+
+      if (response.ok) {
+        // Aggiorna lo stato locale solo se il server conferma
+        setActuators((prev) => ({ ...prev, [actuator]: nextState }));
+        addNotification(`${actuator} impostato su ${actionString}`, 'success');
+      }
+    } catch (error) {
+      console.error("Errore toggle:", error);
+      addNotification(`Errore di connessione`, 'error');
+    }
+  }, [actuators, addNotification]);
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/state');
-
-      if (!response.ok) {
-        // Triggered if the server responds but with an error (e.g., 404 or 500)
-        addNotification(`API Error: ${response.status} ${response.statusText}`, 'error');
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchInitialData = async () => {
+      try {
+        // Carica le regole dal DB
+        const rulesRes = await fetch('http://localhost:5000/api/rules');
+        if (rulesRes.ok) {
+          const data = await rulesRes.json();
+          // Mappa il formato array del DB nel formato oggetto del frontend
+          const formattedRules = data.map(r => ({
+            id: r[0],
+            description: r[1],
+            sensor: r[2],
+            operator: r[3],
+            value: r[4],
+            actuator: r[5],
+            action: r[6]
+          }));
+          setRules(formattedRules);
+        }
+        
+        // Carica lo stato attuale degli attuatori
+        const actRes = await fetch('http://localhost:5000/api/actuators');
+        if (actRes.ok) {
+          const actData = await actRes.json();
+          setActuators(actData);
+        }
+      } catch (error) {
+        console.error("Errore inizializzazione:", error);
       }
+    };
+      fetchInitialData();
+  }, []);
 
-      const data = await response.json();
-      
-      
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Sensori
+        const sensorRes = await fetch('http://localhost:5000/api/state');
+        if (sensorRes.ok) {
+          const data = await sensorRes.json();
+          setSensorData(data); 
+          setTelemetryData(data);
+        }
 
-      setSensorData(data); 
-      setTelemetryData(data);
+        // AGGIUNTA: Fetch stato reale attuatori
+        const actuatorRes = await fetch('http://localhost:5000/api/actuators');
+        if (actuatorRes.ok) {
+          const actData = await actuatorRes.json();
+          setActuators(actData); // Aggiorna i toggle in base al backend
+        }
 
-    } catch (error) {
-      // Triggered if the fetch fails entirely (e.g., Network Error, CORS issue, Server Down)
-      console.error("Could not fetch sensor data:", error);
-      addNotification("Failed to connect to Mars Station API", "error");
-    }
-  };
+      } catch (error) {
+        console.error("Could not fetch data:", error);
+        addNotification("Failed to connect to Mars Station API", "error");
+      }
+    };
 
     fetchData();
     const interval = setInterval(fetchData, 3000);
-
     return () => clearInterval(interval);
   }, [addNotification]);
-
-  // Check rules and trigger actuators
-  useEffect(() => {
-    rules.forEach((rule) => {
-      const sensorValue = sensorData[rule.sensor];
-      if (sensorValue === undefined) return;
-
-      let condition = false;
-      switch (rule.operator) {
-        case '>':
-          condition = sensorValue > rule.value;
-          break;
-        case '<':
-          condition = sensorValue < rule.value;
-          break;
-        case '>=':
-          condition = sensorValue >= rule.value;
-          break;
-        case '<=':
-          condition = sensorValue <= rule.value;
-          break;
-      }
-
-      if (condition && !actuators[rule.actuator]) {
-        setActuators((prev) => ({ ...prev, [rule.actuator]: true }));
-        addNotification(
-          `Rule triggered: ${rule.actuator.replace('_', ' ').toUpperCase()} activated`,
-          'warning'
-        );
-      }
-    });
-  }, [sensorData, rules, actuators, addNotification]);
 
   // Initial welcome message
   useEffect(() => {
@@ -350,7 +406,7 @@ export default function App() {
               <h2 className="text-white text-lg font-bold mb-3"></h2>
               <div className="grid grid-cols-3 gap-4">
                 <ActuatorControl 
-                  name="cooling_fan"
+                  name="entrance_humidifier"
                   label="Entrance Humidifier"
                   isOn={actuators.entrance_humidifier}
                   onToggle={() => toggleActuator('entrance_humidifier')}
