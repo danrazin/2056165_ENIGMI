@@ -70,11 +70,10 @@ def api_get_state():
 def api_get_actuators_state():
     actuators_state = actuators.get_actuators_state()
 
-    # se il simulator restituisce {"actuators": {...}}
     if "actuators" in actuators_state:
         actuators_state = actuators_state["actuators"]
 
-    # converti ON/OFF -> true/false
+    # ON/OFF -> true/false
     normalized = {
         k: (v.upper() == "ON") for k, v in actuators_state.items()
     }
@@ -174,7 +173,7 @@ def run_kafka_consumer():
                 group_id='rules-engine-group'
             )
         except NoBrokersAvailable:
-            time.sleep(5)
+            time.sleep(0.5)
 
     # CHECK THE RULES WHEN NEW SENSOR VALUES ARRIVES
     for message in consumer:
@@ -182,7 +181,7 @@ def run_kafka_consumer():
         process_sensor_data(event)
 
         # TO LET US CHECK IF ACTUATORS CHENGED
-        time.sleep(0.5)
+        time.sleep(0.1)
 
 
 if __name__=="__main__":

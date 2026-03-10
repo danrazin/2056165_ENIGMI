@@ -16,9 +16,9 @@ export default function App() {
     entrance_humidifier: false,
   });
   const [sensorData, setSensorData] = useState({
-    greenhouse_temperature: 22.5,
-    entrance_humidity: 45.0,
-    co2_hall: 450,
+    greenhouse_temperature: 0,
+    entrance_humidity: 0,
+    co2_hall: 0,
     corridor_pressure: 0,
     hydroponic_ph_ph: 0,
     water_tank_level_level_liters: 0,
@@ -32,7 +32,7 @@ export default function App() {
     thermal_loop_primary_temperature_c: 0,
     power_bus_power_kw: 0,
     power_consumption_power_kw: 0,
-    'airlock_airlock-1_cycles': 0, 
+    'airlock_airlock-1_cycles': 0,
   });
 
   // Add notification
@@ -90,10 +90,10 @@ export default function App() {
           setActuators(actData);
         }
 
-        addNotification(`Regola creata con successo (ID: ${result.rule_id})`, 'success');
+        addNotification(`Rule Created (ID: ${result.rule_id})`, 'success');
       }
     } catch (error) {
-      addNotification(`Errore nel salvataggio regola`, 'error');
+      addNotification(`Error saving rule`, 'error');
     }
   }, [addNotification]);
 
@@ -106,10 +106,10 @@ export default function App() {
 
       if (response.ok) {
         setRules((prev) => prev.filter((r) => r.id !== id));
-        addNotification('Regola eliminata dal database', 'warning');
+        addNotification('Rule deleted from database', 'warning');
       }
     } catch (error) {
-      addNotification('Errore nella cancellazione', 'error');
+      addNotification('Error in deletion', 'error');
     }
   }, [addNotification]);
 
@@ -132,11 +132,11 @@ export default function App() {
       if (response.ok) {
         // Aggiorna lo stato locale solo se il server conferma
         setActuators((prev) => ({ ...prev, [actuator]: nextState }));
-        addNotification(`${actuator} impostato su ${actionString}`, 'success');
+        addNotification(`${actuator} set to ${actionString}`, 'success');
       }
     } catch (error) {
-      console.error("Errore toggle:", error);
-      addNotification(`Errore di connessione`, 'error');
+      console.error("Error toggling actuator:", error);
+      addNotification(`Connection error`, 'error');
     }
   }, [actuators, addNotification]);
 
@@ -167,7 +167,7 @@ export default function App() {
           setActuators(actData);
         }
       } catch (error) {
-        console.error("Errore inizializzazione:", error);
+        console.error("Error initializing data:", error);
       }
     };
       fetchInitialData();
@@ -184,11 +184,10 @@ export default function App() {
           setTelemetryData(data);
         }
 
-        // AGGIUNTA: Fetch stato reale attuatori
         const actuatorRes = await fetch('http://localhost:5000/api/actuators');
         if (actuatorRes.ok) {
           const actData = await actuatorRes.json();
-          setActuators(actData); // Aggiorna i toggle in base al backend
+          setActuators(actData); 
         }
 
       } catch (error) {
@@ -263,6 +262,8 @@ export default function App() {
                   unit="kW"
                   color="#f59e0b"
                   generateValue={generateSolarPower}
+                  min={75}
+                  max={200}
                 />
                 <TelemetryChart 
                   key="radiation"
@@ -270,50 +271,62 @@ export default function App() {
                   unit="mSv/h"
                   color="#3b82f6"
                   generateValue={generateRadiation}
+                  min={0}
+                  max={1}
                 />
               </div>
               <h2 className="text-white text-lg font-bold mb-3"></h2>
               <div className="grid grid-cols-2 gap-4">
                 <TelemetryChart 
-                  key="solar-power"
+                  key="life-support"
                   title="Life Support"
                   unit="%"
                   color="#f59e0b"
                   generateValue={generateLife}
+                  min={18}
+                  max={24}
                 />
                 <TelemetryChart 
-                  key="radiation"
+                  key="thermal-support"
                   title="Thermal Support"
                   unit="°C"
                   color="#3b82f6"
                   generateValue={generateThermal}
+                  min={10}
+                  max={100}
                 />
               </div>
               <h2 className="text-white text-lg font-bold mb-3"></h2>
               <div className="grid grid-cols-2 gap-4">
                 <TelemetryChart 
-                  key="solar-power"
+                  key="power-bus"
                   title="Power Bus"
                   unit="kw"
                   color="#f59e0b"
                   generateValue={generatePowerBus}
+                  min={20}
+                  max={100}
                 />
                 <TelemetryChart 
-                  key="radiation"
+                  key="power-consumption"
                   title="Power Consumption"
                   unit="kw"
                   color="#3b82f6"
                   generateValue={generatePowerC}
+                  min={100}
+                  max={200}
                 />
               </div>
               <h2 className="text-white text-lg font-bold mb-3"></h2>
               <div className="grid grid-cols-2 gap-4">
                 <TelemetryChart 
-                  key="solar-power"
+                  key="airlock"
                   title="Airlock"
                   unit="cycle/h"
                   color="#f59e0b"
                   generateValue={generateAirlock}
+                  min={0}
+                  max={10}
                 />
               </div>
             </section>
@@ -326,22 +339,22 @@ export default function App() {
                   title="Greenhouse Temp"
                   value={sensorData.greenhouse_temperature}
                   unit="°C"
-                  min={10}
-                  max={35}
+                  min={18}
+                  max={28}
                 />
                 <SensorGauge 
                   title="Entrance Humidity"
                   value={sensorData.entrance_humidity}
                   unit="%"
-                  min={0}
-                  max={100}
+                  min={20}
+                  max={60}
                 />
                 <SensorGauge 
                   title="Hall CO₂"
                   value={sensorData.co2_hall}
                   unit="ppm"
-                  min={500}
-                  max={1500}
+                  min={400}
+                  max={1000}
                 />
               </div>
               <h2 className="text-white text-lg font-bold mb-3"></h2>
@@ -350,8 +363,8 @@ export default function App() {
                   title="Hydroponic PH"
                   value={sensorData.hydroponic_ph_ph}
                   unit="ph"
-                  min={0}
-                  max={14}
+                  min={5.5}
+                  max={6.5}
                 />
                 <SensorGauge 
                   title="Water Tank Level"
@@ -373,16 +386,16 @@ export default function App() {
                 <SensorGauge 
                   title="Air Quality PM25"
                   value={sensorData.air_quality_pm25_pm25_ug_m3}
-                  unit="um/m3"
-                  min={0}
-                  max={50}
+                  unit="ug/m3"
+                  min={15}
+                  max={35}
                 />
                 <SensorGauge 
                   title="Air Quality VOC"
                   value={sensorData.air_quality_voc_voc_ppb}
                   unit="ppb"
-                  min={0}
-                  max={500}
+                  min={200}
+                  max={600}
                 />
               </div>
             </section>

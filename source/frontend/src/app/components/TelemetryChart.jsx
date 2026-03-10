@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
-export function TelemetryChart({ title, unit, color, generateValue }) {
+export function TelemetryChart({ title, unit, color, generateValue, min, max }) {
   const [data, setData] = useState([]);
   const counterRef = useRef(0);
 
@@ -41,7 +41,7 @@ export function TelemetryChart({ title, unit, color, generateValue }) {
         <LineChart data={data} key={title}>
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
           <XAxis dataKey="time" stroke="#888" hide />
-          <YAxis stroke="#b48c8c" />
+          <YAxis stroke="#b48c8c" domain={[min, max]} />
           <Line 
             type="monotone" 
             dataKey="value" 
