@@ -4,6 +4,11 @@ const SENSORS = [
   { value: 'greenhouse_temperature', label: 'Greenhouse Temperature' },
   { value: 'entrance_humidity', label: 'Entrance Humidity' },
   { value: 'co2_hall', label: 'Hall CO₂' },
+  { value: 'corridor_pressure', label: 'Corridor Pressure' },
+  { value: 'hydroponic_ph_ph', label: 'Hydroponic PH' },
+  { value: 'water_tank_level_level_liters', label: 'Water Tank Level' },
+  { value: 'air_quality_pm25_pm25_ug_m3', label: 'Air Quality PM25' },
+  { value: 'air_quality_voc_voc_ppb', label: 'Air Quality VOC' },
 ];
 
 const OPERATORS = [
@@ -11,12 +16,14 @@ const OPERATORS = [
   { value: '<', label: '<' },
   { value: '>=', label: '>=' },
   { value: '<=', label: '<=' },
+  { value: '!=', label: '!=' },
 ];
 
 const ACTUATORS = [
   { value: 'cooling_fan', label: 'Cooling Fan' },
   { value: 'habitat_heater', label: 'Habitat Heater' },
   { value: 'hall_ventilation', label: 'Hall Ventilation' },
+  { value: 'entrance_humidifier', label: 'Entrance Humidifier' },
 ];
 
 export function RuleManager({ rules, onAddRule, onDeleteRule }) {
