@@ -68,8 +68,31 @@ def api_get_state():
 # TO GET THE STATE OF THE ACTUATORS
 @app.route("/api/actuators", methods=['GET'])
 def api_get_actuators_state():
-    actuators_state=actuators.get_actuators_state()
-    return jsonify(actuators_state),200
+    actuators_state = actuators.get_actuators_state()
+
+    # se il simulator restituisce {"actuators": {...}}
+    if "actuators" in actuators_state:
+        actuators_state = actuators_state["actuators"]
+
+    # converti ON/OFF -> true/false
+    normalized = {
+        k: (v.upper() == "ON") for k, v in actuators_state.items()
+    }
+
+    return jsonify(normalized), 200
+
+@app.route("/api/actuators/toggle", methods=['POST'])
+def api_toggle_actuator():
+    data = request.json
+    actuator = data.get("actuator")
+    action = data.get("action")
+
+    if actuator is None or action is None:
+        return jsonify({"error": "invalid request"}), 400
+
+    actuators.trigger_actuator(actuator, action)
+
+    return jsonify({"status": "ok"}), 200
 
 # MANAGER OF TH RULES
 # GET -> RETURN ALL THE RULES THAT EXIST

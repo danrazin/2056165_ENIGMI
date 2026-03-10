@@ -82,8 +82,15 @@ export default function App() {
 
         // Aggiorna lo stato aggiungendo la nuova regola a quelle esistenti
         setRules((prevRules) => [...prevRules, newRule]);
-        
-        addNotification(`Regola creata con successo (ID: ${result.id})`, 'success');
+
+        // sincronizza subito gli actuators
+        const actRes = await fetch('http://localhost:5000/api/actuators');
+        if (actRes.ok) {
+          const actData = await actRes.json();
+          setActuators(actData);
+        }
+
+        addNotification(`Regola creata con successo (ID: ${result.rule_id})`, 'success');
       }
     } catch (error) {
       addNotification(`Errore nel salvataggio regola`, 'error');
