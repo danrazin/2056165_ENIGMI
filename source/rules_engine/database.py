@@ -41,7 +41,9 @@ def add_rule(description,sensor_name, operator, threshold, actuator, action):
                    VALUES(?,?,?,?,?,?)
                    ''', (description,sensor_name,operator,threshold,actuator,action))
     conn.commit()
+    rule_id = cursor.lastrowid
     conn.close()
+    return rule_id
 
 #DELETE RULE
 def delete_rule(rule_id):

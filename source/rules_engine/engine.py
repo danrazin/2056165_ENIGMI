@@ -116,15 +116,15 @@ def api_manage_rules():
                 current_value = sensor_mem[sensor]
                 if evaluate_condition(current_value, op, threshold):
                     actuators.trigger_actuator(actuator, action)
-            else:
+                else:
 
-                # CHECK IF THE RULE IS NOT VALID ANYMORE
-                inverse_action = "OFF" if action.upper() == "ON" else "ON"
-                actuators.trigger_actuator(actuator, inverse_action)
+                    # CHECK IF THE RULE IS NOT VALID ANYMORE
+                    inverse_action = "OFF" if action.upper() == "ON" else "ON"
+                    actuators.trigger_actuator(actuator, inverse_action)
 
-            database.add_rule(description, sensor, op, threshold, actuator, action) 
+            rule_id = database.add_rule(description, sensor, op, threshold, actuator, action) 
                          
-            return jsonify({"status": "success", "message": "Rule added"}), 201
+            return jsonify({"status": "success", "message": "Rule added", "rule_id": rule_id}), 201
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)}), 400
     
