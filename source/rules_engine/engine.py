@@ -9,8 +9,10 @@ from kafka.errors import NoBrokersAvailable
 import database
 import actuators
 
+# LOCAL MEMORY TO  HAVE THE CURRENT VALUE OF THE SENSORS
 sensor_mem={}
 
+# EVALUATE IF A SENSOR RESPECT A CONDITION
 def evaluate_condition(value,operator,threshold):
     if operator=="<":
         return value<threshold
@@ -25,50 +27,67 @@ def evaluate_condition(value,operator,threshold):
     elif operator=="!=":
         return value!=threshold
     else:
-        print(f"ERROR: Invalid operator {operator}")
         return False
-    
-def process_sensor_data(event,all_rules):
+
+# FIND THE RULES FOR THE SPECIFIC SENSOR AND CHECK IF THEY ARE VALID OR NOT
+def process_sensor_data(event):
     sensor_id=event.get("sensor_id")
     value=event.get("value")
     if sensor_id is None or value is None:
-        print("ERROR: Invalid sensor data format")
         return
     
     sensor_mem[sensor_id]=value
 
-    for rule in all_rules:
-        if rule['sensor_name']==sensor_id:
-            print(f"DEBUG:Valuto rule {rule['rule_id']} per {sensor_id}")
+    rules=database.get_rules_for_sensor(sensor_id)
 
-            if evaluate_condition(value,rule['operator'],rule['threshold']):
-                actuators.trigger_actuator(rule['actuator'],rule['action'])
-
+    for rule in rules:
+        if evaluate_condition(value,
+                              rule[0],  # OPERATOR
+                              rule[1] #THRESHOLD
+                              ):
+            actuators.trigger_actuator(
+                rule[2],    # ACTUATOR
+                rule[3]     # ACTION
+                )
+        # CHECK WHEN RULE IS NOT VALID ANYMORE
+        else:
+            inverse_action = "OFF" if rule[3].upper() == "ON" else "ON"
+            actuators.trigger_actuator(rule[2], inverse_action)
 
         
 # FLASK API
 app=Flask(__name__)
 
+# TO GET THE VALUES OF THE SENSORS
 @app.route("/api/state",methods=['GET'])
 def api_get_state():
     return jsonify(sensor_mem),200
 
+# TO GET THE STATE OF THE ACTUATORS
 @app.route("/api/actuators", methods=['GET'])
 def api_get_actuators_state():
     actuators_state=actuators.get_actuators_state()
     return jsonify(actuators_state),200
 
-
+# MANAGER OF TH RULES
+# GET -> RETURN ALL THE RULES THAT EXIST
+# POST -> CREATE A NEW RULE, AND CHECK IF SOME SENSOR RESPECT IT
 @app.route("/api/rules", methods=['GET','POST'])
 def api_manage_rules():
+
+    # GET METHOD
     if request.method=='GET':
         rules=database.get_all_rules()
         return jsonify(rules),200
     
+    # POST METHOD
     elif request.method == 'POST':
         data = request.json
 
         try:
+            # CONDITION ARRIVES LIKE "humidity > 25" -> SPLIT IT TO SEND IT CLEARLY INTO THE DATABASE AND CHECK IT
+            # ACTION ARRIVES LIKE "cooling_fan ON" or "cooling_fan SET ON" -> SPLIT IT TO HAVE CLEARER INFO
+
             condition = data['condition'].strip()
             cond_parts = condition.split()
             
@@ -90,23 +109,27 @@ def api_manage_rules():
             
             if sensor in sensor_mem:
                 current_value = sensor_mem[sensor]
-                print(f"DEBUG: Controllo immediato nuova regola per {sensor} con valore {current_value}")
                 if evaluate_condition(current_value, op, threshold):
-                    print(f"DEBUG: La nuova regola è già VERA! Attivo {actuator}")
                     actuators.trigger_actuator(actuator, action)
+            else:
+
+                # CHECK IF THE RULE IS NOT VALID ANYMORE
+                inverse_action = "OFF" if action.upper() == "ON" else "ON"
+                actuators.trigger_actuator(actuator, inverse_action)
 
             database.add_rule(description, sensor, op, threshold, actuator, action) 
                          
             return jsonify({"status": "success", "message": "Rule added"}), 201
         except Exception as e:
-            print(f"DEBUG ERROR: {str(e)}")
             return jsonify({"status": "error", "message": str(e)}), 400
     
+# TO DELETE A RULE
 @app.route("/api/rules/<int:rule_id>", methods=['DELETE'])
 def api_delete_rule(rule_id):
     database.delete_rule(rule_id)
     return jsonify({"message":"Rule deleted successfully"}),200
 
+# RUN THE SERVICE
 def run_api():
     app.run(host='0.0.0.0', port=5000, debug=False)
 
@@ -116,25 +139,31 @@ def run_kafka_consumer():
     while consumer is None:
         try:
             consumer = KafkaConsumer(
-                'mars_normalized_events',
-                bootstrap_servers=['kafka:9092'],
+                'mars_normalized_events',   # KAFKA TOPIC
+                bootstrap_servers=['kafka:9092'],   # CONTAINER
                 value_deserializer=lambda m: json.loads(m.decode('utf-8')),
                 auto_offset_reset='earliest',
                 group_id='rules-engine-group'
             )
-            print("CONNESSO A KAFKA!")
         except NoBrokersAvailable:
-            print("Kafka non pronto, riprovo in 5 secondi...")
             time.sleep(5)
 
+    # CHECK THE RULES WHEN NEW SENSOR VALUES ARRIVES
     for message in consumer:
         event = message.value
-        curr_rules=database.get_all_rules()
-        process_sensor_data(event,curr_rules)
+        process_sensor_data(event)
+
+        # TO LET US CHECK IF ACTUATORS CHENGED
+        time.sleep(0.5)
+
 
 if __name__=="__main__":
+    
+    #INITIALIZE SB
     database.init_db()
-
+    
+    # CREATE A THREAD TO RUN FLASK AND KAFKA TOGETHER
     threading.Thread(target=run_api,daemon=True).start()
 
+    # RUN KAFKA
     run_kafka_consumer()
