@@ -205,3 +205,78 @@ from Kafka.
     | action_state     | TEXT        | State to set on the actuator         |
     | enabled          | INTEGER     | Boolean flag (1=active, 0=disabled)  |
 
+## CONTAINER_NAME: frontend
+
+### DESCRIPTION: 
+This container hosts the web user interface of the Mars Automation Platform.
+It serves as the primary control hub for operators, enabling visual monitoring and system management.
+
+### USER STORIES:
+5) As an energy engineer , I want to view the Solar Array Power graph.
+
+6) As a safety officer , I want to monitor Radiation Exposure trends.
+
+7) As a user , I want LIVE indicators on charts to verify active streams.
+
+8) As a botanist , I want sensor progress bars to change color when values become dangerous.
+
+9) As a colonist , I want to see the greenhouse temperature in Celsius.
+
+10) As a maintenance worker , I want to track entrance humidity levels.
+
+11) As a life-support specialist , I want to monitor hall CO₂ concentration.
+
+12) As an operator , I want to manually toggle actuators ON/OFF.
+
+13) As a technician , I want to clearly see actuator states.
+
+14) As a developer , I want newly discovered actuators to appear automatically in the UI.
+
+15) As a crew member , I want to see the current SOL and Mars Local Time.
+
+16) As a network admin , I want a broker connection indicator.
+
+17) As a developer , I want a simulator health indicator.
+
+18) As a supervisor , I want all system actions recorded in an event log.
+
+19) As a user , I want color-coded log entries to quickly identify issues.
+
+20) As a data analyst , I want each log entry to include a precise timestamp.
+
+### PORTS: 
+- 80 (internal Nginx port)
+- 5173 (external mapping used during development via Vite)
+
+### DESCRIPTION:
+The frontend container serves a responsive Single Page Application (SPA).
+It utilizes Nginx to distribute optimized static files that allow users to view real-time charts, system logs, and
+manage automation rules through a modern dashboard.
+
+### PERSISTENCE EVALUATION
+The container is stateless.
+Is does not persist any data locally and all information regarding sensors, latest states and automation rules is fetched
+at runtime from the rules-engine API.
+
+### EXTERNAL SERVICES CONNECTIONS
+- Rules Engine API: connection used to retrieve sensor states and manage automation rules (CRUD operations).
+- Simulation API: accessed directly or via proxy to discover available devices and manually trigger actuators.
+
+### MICROSERVICES:
+
+#### MICROSERVICE: Web dashboard
+- TYPE: frontend
+- DESCRIPTION: A Single Page Application (SPA) sedigned for centralized habitat control.
+- PORTS: 80.
+- TECHNOLOGICAL SPECIFICATION: vuilt using react with TypeScript.
+The build process is handled by Vite and styled using Tailwinf CSS.
+The UI components leverage Radix UI primitives and Material UI (MUI) icons/components as indicated by the package dependecies.
+The deployment is managed through a multi-stage Dockerfile using Node 10 for the build phase and Nginx Alpine to serve static assets.
+- PAGES
+    | NAME          | Description                                                                       | Related Microservice    | User Stories      |
+    |---------------|-----------------------------------------------------------------------------------|-------------------------|-------------------|
+    | Dashboad      | Main monitoring view with charts for solar power, radiation, and sensor gauges.   | rules-engine            | 5,6,7,8,9,10,11,15|
+    | Rule Manager  | Interface to define "IF-THEN" triggers, link actuators, and delete existing rules.| rules-engine            | 1,2,3,4           |
+    | Actuator panel| Manual override station to toggle fans, heaters, and humidifiers.                 | simulator               | 12,13             |
+    | System status | Technical view showing the health of the simulator and Kafka connection.          | simulator/rules-engine  | 14,16,17          |
+    | Event log     | Real-time scrollable feed of all system events, triggers, and timestamps.         | rules-engine            | 18,19,20          |
