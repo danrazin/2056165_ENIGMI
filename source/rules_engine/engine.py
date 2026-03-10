@@ -96,14 +96,17 @@ def api_manage_rules():
             threshold = float(cond_parts[2])
 
             action_str = data['action'].strip()
-            act_parts = action_str.split()
-
-            if "set" in action_str.lower():
-                actuator = act_parts[1]
-                action = act_parts[3]
-            else:
-                actuator = act_parts[0]
-                action = act_parts[1]
+            # NORMALIZE THE ACTION STRING TO EXTRACT ACTUATOR AND ACTION
+            #   SUPPORTED FORMATS:
+            #   "cooling_fan ON"
+            #   "set cooling_fan ON"
+            #   "set cooling_fan to ON"
+            #   "cooling_fan to OFF"
+            parts = [tok for tok in action_str.split() if tok.upper() not in ("SET", "TO")]
+            if len(parts) < 2:
+                raise ValueError(f"invalid action format: '{action_str}'")
+            actuator = parts[0]
+            action = parts[1]
 
             description = data.get('description', f"Rule for {sensor}")
             

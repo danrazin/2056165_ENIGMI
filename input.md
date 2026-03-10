@@ -76,25 +76,29 @@ IF greenhouse_temperature > 28 C
 THEN set cooling_fan to ON
 
 The supported operators to do so are:
-- <
-- <=
-- =
-- >
-- >=
-- ==
-- !=
+- `<`
+- `<=`
+- `>`
+- `>=`
+- `==`
+- `!=`
 
 # Rule JSON Schema
 
-When creating a rule via the API, the system parses a structured condition and action:
+When creating a rule via the API, the service accepts a JSON object with a human‑readable description,
+plus the condition and action as strings.  The backend will parse the condition (sensor, operator, threshold)
+and the action (actuator and state) before storing it in the database.
 
+Example payload:
+
+```json
 {
   "description": "High temperature cooling",
   "condition": "greenhouse_temperature > 28",
   "action": "set cooling_fan to ON"
 }
+```
 
-This rules are evaluated when a new normalized event arrives.
-If the condition evaluates to true then the rule engine generates and actuator command and the actuator state is
-updated using the simulator API.
-Rule are persisted to make sure the service is available after restarts.
+These rules are evaluated whenever a new normalized event arrives. If the condition evaluates to `true`,
+then the rules engine generates an actuator command and the actuator state is updated via the simulator API.
+Rules are persisted so that the service can recover after restarts.

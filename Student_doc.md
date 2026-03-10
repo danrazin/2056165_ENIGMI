@@ -137,7 +137,7 @@ It uses the KRaft (Kafta Raft) protocol for cluster management without the need 
 - SERVICE ARCHITECTURE: Distributed log-based architecture.
 Uses a PLAINTEXT listener for internal communication within the mars_net Docker network.
 
-## CONTAINER_NAME: engine
+## CONTAINER_NAME: rules_engine
 
 ### DESCRIPTION: 
 System logical core: manages the frontend API, rule persistence and event processing.
@@ -181,14 +181,27 @@ It connects to the Kakfa Broker (Consumer) and to the Simulator (POST for attuat
 - TECHNOLOGICAL SPECIFICATION: Flask (Web Framework), SQLite3, Kafka Consumer.
 - SERVICE ARCHITECTURE: multithreaded: one thread runs the Flask API server, a second thread constantly consumes messages
 from Kafka.
-- ENDPOINTS: 
-		
-	| HTTP METHOD | URL            | Description                                           | User Stories |
-	| GET         | /api/state     | returns the last known state of all sensors           | 7,9,10,11    |
-        | POST        | /api/rules     | creates a new rule of automation                      | 1,2          |
-        | GET         | /api/rules     | returns the list of saved rules                       | 3            |
-        | GET         | /api/actuators | returns the state of the actuators from the simulator | 13           |
-        | DELETE      | /api/rules/{id}| deletes a rule                                        | 4            |
+- ENDPOINTS:
+
+    | HTTP METHOD | URL               | Description                                           | User Stories |
+    |-------------|-------------------|-------------------------------------------------------|--------------|
+    | GET         | /api/state        | returns the last known state of all sensors           | 7, 9, 10, 11 |
+    | POST        | /api/rules        | creates a new rule of automation                      | 1, 2         |
+    | GET         | /api/rules        | returns the list of saved rules                       | 3            |
+    | GET         | /api/actuators    | returns the state of the actuators from the simulator | 13           |
+    | DELETE      | /api/rules/{id}   | deletes a rule                                        | 4            |
 - DB STRUCTURE:
-rules :	| rule_id | description | sensor_name | operator | threshold_value | actuator_name | action_state | enabled |
+
+    **rules** table:
+
+    | Column Name      | Type        | Description                          |
+    |------------------|-------------|--------------------------------------|
+    | rule_id          | INTEGER     | Primary key (autoincrement)          |
+    | description      | TEXT        | Human-readable rule description      |
+    | sensor_name      | TEXT        | Sensor identifier in condition       |
+    | operator         | TEXT        | Comparison operator                  |
+    | threshold_value  | REAL        | Numeric threshold value              |
+    | actuator_name    | TEXT        | Actuator targeted by the action     |
+    | action_state     | TEXT        | State to set on the actuator         |
+    | enabled          | INTEGER     | Boolean flag (1=active, 0=disabled)  |
 
